@@ -3,18 +3,17 @@ pipeline {
     agent any
 
     stages {
-        stage('Checkout') {
+        stage('Check Files') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/Bharani136/student-management-aws-devops.git'
+                sh 'test -f Dockerfile'
+                sh 'test -f compose.yaml'
+                sh 'test -f /opt/student-management/.env'
             }
         }
 
-        stage('Check Files') {
+        stage('Validate Compose') {
             steps {
-                sh 'ls -la'
-                sh 'test -f Dockerfile'
-                sh 'test -f compose.yaml'
+                sh 'docker compose --env-file /opt/student-management/.env config -q'
             }
         }
 
@@ -26,10 +25,7 @@ pipeline {
 
         stage('Deploy Application') {
             steps {
-                sh '''
-                    docker compose down || true
-                    docker compose up -d --build
-                '''
+                sh 'docker compose --env-file /opt/student-management/.env up -d --build'
             }
         }
     }
