@@ -17,13 +17,7 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
-            steps {
-                sh 'docker build -t student-management-app:latest .'
-            }
-        }
-
-        stage('Deploy Application') {
+        stage('Build and Deploy') {
             steps {
                 sh 'docker compose --env-file /opt/student-management/.env up -d --build'
             }
