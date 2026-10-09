@@ -1,0 +1,259 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management System</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f3f6fa;
+            margin: 0;
+            padding: 30px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: auto;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px #00000010;
+        }
+
+        h1 {
+            text-align: center;
+            color: #163c70;
+        }
+
+        form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input, button {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        input {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        button {
+            background: #1756a9;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #103c78;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background: #e5edf8;
+            color: #163c70;
+        }
+
+        #message {
+            color: #1756a9;
+            margin-top: 15px;
+        }
+
+        .delete-btn {
+            background: #dc2626;
+        }
+
+        .delete-btn:hover {
+            background: #991b1b;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                padding: 15px;
+            }
+
+            table {
+                min-width: 650px;
+            }
+
+            .table-wrapper {
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="container">
+        <h1>Student Management System</h1>
+
+        <form id="studentForm">
+            <input id="name" type="text"
+                   placeholder="Student Name" required>
+
+            <input id="email" type="email"
+                   placeholder="Email" required>
+
+            <input id="department" type="text"
+                   placeholder="Department" required>
+
+            <input id="age" type="number"
+                   min="1" max="120" placeholder="Age">
+
+            <button type="submit">Add Student</button>
+        </form>
+
+        <p id="message" role="status"></p>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Department</th>
+                        <th>Age</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="studentList"></tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        const API = "http://localhost:8080/api/students";
+
+        async function loadStudents() {
+            const response = await fetch(API);
+
+            if (!response.ok) {
+                throw new Error("Unable to load students.");
+            }
+
+            const students = await response.json();
+            const list = document.getElementById("studentList");
+
+            list.replaceChildren();
+
+            students.forEach(student => {
+                const row = document.createElement("tr");
+
+                [
+                    student.id,
+                    student.name,
+                    student.email,
+                    student.department,
+                    student.age ?? ""
+                ].forEach(value => {
+                    const cell = document.createElement("td");
+                    cell.textContent = value;
+                    row.appendChild(cell);
+                });
+
+                const actionCell = document.createElement("td");
+                const deleteButton = document.createElement("button");
+
+                deleteButton.textContent = "Delete";
+                deleteButton.className = "delete-btn";
+
+                deleteButton.addEventListener("click", async () => {
+                    if (!confirm("Are you sure you want to delete this student?")) {
+                        return;
+                    }
+
+                    try {
+                        const result = await fetch(
+                            `${API}/${student.id}`,
+                            { method: "DELETE" }
+                        );
+
+                        if (!result.ok) {
+                            throw new Error("Unable to delete student.");
+                        }
+
+                        document.getElementById("message").textContent =
+                            "Student deleted successfully!";
+
+                        await loadStudents();
+                    } catch (error) {
+                        document.getElementById("message").textContent =
+                            error.message;
+                    }
+                });
+
+                actionCell.appendChild(deleteButton);
+                row.appendChild(actionCell);
+                list.appendChild(row);
+            });
+        }
+
+        document.getElementById("studentForm")
+            .addEventListener("submit", async event => {
+                event.preventDefault();
+
+                const student = {
+                    name: document.getElementById("name").value.trim(),
+                    email: document.getElementById("email").value.trim(),
+                    department: document.getElementById("department").value.trim(),
+                    age: Number(document.getElementById("age").value) || null
+                };
+
+                const message = document.getElementById("message");
+
+                try {
+                    const response = await fetch('/api/students', {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(student)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error("Unable to add student.");
+                    }
+
+                    event.target.reset();
+                    message.textContent = "Student added successfully!";
+
+                    await loadStudents();
+                } catch (error) {
+                    message.textContent =
+                        error.message +
+                        " Check whether Spring Boot is running.";
+                }
+            });
+
+        loadStudents().catch(error => {
+            document.getElementById("message").textContent =
+                error.message +
+                " Start your Spring Boot application and MySQL database.";
+        });
+    </script>
+</body>
+</html>
